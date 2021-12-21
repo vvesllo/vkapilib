@@ -6,3 +6,4 @@ all:
 
 clear:
 	-rm *.exe
+	-rm *.out
