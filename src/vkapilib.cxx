@@ -88,6 +88,7 @@ std::string vkapilib::VKBot::update()
 		curl_easy_setopt(curl, CURLOPT_URL, ("https://api.vk.com/method/groups.getLongPollServer?group_id="+ std::to_string(group_id) +"&access_token=" + token + "&v="+v+"&lang="+lang).c_str());
 		res = curl_easy_perform(curl);
 		root.Parse(content.c_str());
+		std::cout << content << '\n';
 
 		longpoll_key = root["response"]["key"].GetString();
 		server = root["response"]["server"].GetString();
@@ -130,6 +131,7 @@ std::string vkapilib::VKBot::update()
 					curl_easy_setopt(curl, CURLOPT_URL, ("https://api.vk.com/method/groups.getLongPollServer?group_id="+ std::to_string(group_id) +"&access_token=" + token + "&v="+v+"&lang="+lang).c_str());
 					res = curl_easy_perform(curl);
 					root.Parse(content.c_str());
+					std::cout << content << '\n';
 
 					longpoll_key = root["response"]["key"].GetString();
 					server = root["response"]["server"].GetString();
@@ -156,3 +158,58 @@ size_t vkapilib::VKBot::write_data(char* ptr, size_t size, size_t nmemb, std::st
 	}
 	return 0;
 }
+
+
+// -------------------------------------------------------------------------------------------------------------------------
+// VKAPI Functions
+// -------------------------------------------------------------------------------------------------------------------------
+
+
+vkapilib::VKAPI::VKAPI(std::string v) : v(v)
+{
+	curl = curl_easy_init();
+	curl_global_init(CURL_GLOBAL_DEFAULT);
+	if (curl)
+	{
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, true);
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &content);
+	}
+}
+
+vkapilib::VKAPI::~VKAPI() { curl_easy_cleanup(curl); }
+
+std::string vkapilib::VKAPI::call(std::string method_name, std::string (*params)[2], size_t len)
+{
+	content.clear();
+	std::stringstream params_str;
+	for (size_t i = 0; i < len; i++) {
+		std::string str = params[i][1];
+		str = replace(str);
+		params_str << "&" << params[i][0] << "=" << str;
+	}
+	std::string url = "https://api.vk.com/method/"+method_name+"?"+params_str.str()+"&v="+v;
+
+	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+	res = curl_easy_perform(curl);
+	if (res != CURLE_OK)
+	{
+		std::cout << "Error! No.2" << std::endl;
+		std::cout << curl_easy_strerror(res) << std::endl;
+	}
+
+	return content;
+}
+
+size_t vkapilib::VKAPI::write_data(char* ptr, size_t size, size_t nmemb, std::string* data)
+{
+	if (data)
+	{
+		data->append(ptr, size * nmemb);
+		return size * nmemb;
+	}
+	return 0;
+}
+
+
