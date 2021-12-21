@@ -5,7 +5,7 @@ int main()
 {
     std::locale loc;
     std::string token = "token";
-    vkapilib::VKBot bot(1, token, "5.131", "ru");
+    vkapilib::VKBot bot(194720349, token, "5.131", "ru");
     for(;;)
     {
         bot.update();
