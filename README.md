@@ -3,7 +3,7 @@
 Простая библиотека для работы с API ВК на C++
 
 для создания бота (группа) можно использовать VKBot
-```
+```C++
 // bot.cxx
 #include "include/vkapilib.h"
 #include <locale>
@@ -30,7 +30,7 @@ int main()
 ```
 
 для отправки запросов на API можно использовать VKAPI
-```
+```C++
 // getGroupMembers.cxx
 #include "include/vkapilib.h"
 
@@ -52,6 +52,6 @@ int main()
 ```
 
 для создания бота (аккаунт) можно использовать VKUser
-```
+```C++
 // soon :)
 ```
