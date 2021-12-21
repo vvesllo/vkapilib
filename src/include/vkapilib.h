@@ -42,4 +42,18 @@ namespace vkapilib
     {
         //soon :)
     };
+    class VKAPI
+    {
+    public:
+    	VKAPI(std::string v);
+    	~VKAPI();
+        std::string call(std::string mathod_name, std::string (*params)[2], size_t len);
+    private:
+        static size_t write_data(char* ptr, size_t size, size_t nmemb, std::string* data);
+
+        std::string content;
+        std::string v;
+        CURL* curl;
+        CURLcode res;
+    };
 }
