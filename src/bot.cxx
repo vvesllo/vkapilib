@@ -19,5 +19,4 @@ int main()
             bot.call("messages.send", params, sizeof(params)/sizeof(params[0]));
         }
     }
-    system("pause");
 }
