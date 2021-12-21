@@ -3,11 +3,8 @@
 #include <sstream>
 #include <string>
 #include <iostream>
-#include <curl\curl.h>
+#include <curl/curl.h>
 #include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
-using namespace rapidjson;
 
 namespace vkapilib
 {
@@ -16,10 +13,10 @@ namespace vkapilib
     public:
         VKBot(int group_id, std::string token, std::string v, std::string lang);
     	~VKBot();
-        void update();
     	int peerId();
     	int fromId();
-        void send(int peer_id, std::string text);
+        std::string update();
+        std::string call(std::string mathod_name, std::string (*params)[2], size_t len);
     	std::string getMessage();
 
     private:
@@ -27,14 +24,16 @@ namespace vkapilib
 
         CURL* curl;
         CURLcode res;
-        Document root;
-
+        rapidjson::Document root;
         std::string content;
         std::string token;
         std::string message;
         std::string longpoll_key;
         std::string server;
         std::string ts;
+        std::string v;
+        int group_id;
+        std::string lang;
         std::string peer_id;
         std::string from_id;
 
