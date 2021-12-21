@@ -1,6 +1,21 @@
 #include "include/vkapilib.h"
 
-vkapilib::VKBot::VKBot(int group_id, std::string token, std::string v, std::string lang) : token(token)
+std::string replace(std::string text)
+{
+	std::string symbols = " +\n\t";
+	std::string symbols_2[] = {"%20", "%2B", "%0A", "%09"};
+	std::string new_text = "";
+	for (size_t i = 0; i < strlen(text.c_str()); i++) {
+		size_t pos = symbols.find(text[i]);
+		if (pos != std::string::npos)
+			new_text += symbols_2[pos];
+		else
+			new_text += text[i];
+	}
+	return new_text;
+}
+
+vkapilib::VKBot::VKBot(int group_id, std::string token, std::string v, std::string lang) : token(token), v(v), group_id(group_id), lang(lang)
 {
 	curl = curl_easy_init();
 	curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -15,7 +30,7 @@ vkapilib::VKBot::VKBot(int group_id, std::string token, std::string v, std::stri
 	res = curl_easy_perform(curl);
 	if (res != CURLE_OK)
 	{
-		std::cout << "Error!" << std::endl;
+		std::cout << "Error! No.1" << std::endl;
 		std::cout << curl_easy_strerror(res) << std::endl;
 	}
 	root.Parse(content.c_str());
@@ -24,6 +39,7 @@ vkapilib::VKBot::VKBot(int group_id, std::string token, std::string v, std::stri
 	server = root["response"]["server"].GetString();
 	ts = root["response"]["ts"].GetString();
 }
+
 vkapilib::VKBot::~VKBot() { curl_easy_cleanup(curl); }
 
 int vkapilib::VKBot::peerId() { return std::stoi(peer_id); }
@@ -32,50 +48,109 @@ int vkapilib::VKBot::fromId() { return std::stoi(from_id); }
 
 std::string vkapilib::VKBot::getMessage() { return message; }
 
-void vkapilib::VKBot::send(int peer_id, std::string text)
+std::string vkapilib::VKBot::call(std::string method_name, std::string (*params)[2], size_t len)
 {
-	std::string url = "https://api.vk.com/method/messages.send?peer_id="+std::to_string(peer_id)+"&message="+text+"&random_id=0&access_token="+token+"&v=5.131";
+	content.clear();
+	std::stringstream params_str;
+	for (size_t i = 0; i < len; i++) {
+		std::string str = params[i][1];
+		str = replace(str);
+		params_str << "&" << params[i][0] << "=" << str;
+	}
+	std::string url = "https://api.vk.com/method/"+method_name+"?"+params_str.str()+"&v="+v;
 	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 	res = curl_easy_perform(curl);
-
 	if (res != CURLE_OK)
 	{
-		std::cout << "Error!" << std::endl;
+		std::cout << "Error! No.2" << std::endl;
 		std::cout << curl_easy_strerror(res) << std::endl;
 	}
+	// std::cout << content << std::endl;
+	return content;
 }
 
-void vkapilib::VKBot::update()
+std::string vkapilib::VKBot::update()
 {
 	message.clear();
+	content.clear();
+
 	std::stringstream ss;
-	ss << server << "?act=a_check&key=" << longpoll_key << "&ts=" << ts << "&wait=1";
+	ss << server << "?act=a_check&key=" << longpoll_key << "&ts=" << ts << "&wait=25";
 	curl_easy_setopt(curl, CURLOPT_URL, ss.str().c_str());
 	res = curl_easy_perform(curl);
+
 	root.Parse(content.c_str());
 	if (res != CURLE_OK)
 	{
-		std::cout << "Error!" << std::endl;
+		std::cout << "Error! No.3" << std::endl;
 		std::cout << curl_easy_strerror(res) << std::endl;
+		content.clear();
+		curl_easy_setopt(curl, CURLOPT_URL, ("https://api.vk.com/method/groups.getLongPollServer?group_id="+ std::to_string(group_id) +"&access_token=" + token + "&v="+v+"&lang="+lang).c_str());
+		res = curl_easy_perform(curl);
+		root.Parse(content.c_str());
+
+		longpoll_key = root["response"]["key"].GetString();
+		server = root["response"]["server"].GetString();
+		ts = root["response"]["ts"].GetString();
+		content.clear();
 	}
-	const Value& updates = root["updates"];
-	ts = root["ts"].GetString();
-	if (!updates.Empty())
+
+
+	bool failed_find = root.FindMember("failed") == root.MemberEnd() ? false : true;
+	if (!failed_find)
 	{
-		std::string type = updates[0]["type"].GetString();
-		if (type == "message_new")
+		const rapidjson::Value& updates = root["updates"];
+		ts = root["ts"].GetString();
+		if (!updates.Empty())
 		{
-			message = updates[0]["object"]["message"]["text"].GetString();
-			peer_id = std::to_string(updates[0]["object"]["message"]["peer_id"].GetInt());
-			from_id = std::to_string(updates[0]["object"]["message"]["from_id"].GetInt());
+			std::string type = updates[0]["type"].GetString();
+			if (type == "message_new")
+			{
+				message = updates[0]["object"]["message"]["text"].GetString();
+				peer_id = std::to_string(updates[0]["object"]["message"]["peer_id"].GetInt());
+				from_id = std::to_string(updates[0]["object"]["message"]["from_id"].GetInt());
+			}
 		}
 	}
+	else
+	{
+		std::cout << "failed\n";
+		switch (root["failed"].GetInt())
+		{
+			case 1:
+				{
+					std::cout << "Failed No 1" << std::endl;
+					ts = root["response"]["ts"].GetString();
+					break;
+				}
+			case 2:
+				{
+					content.clear();
+					std::cout << "Failed No 2" << std::endl;
+					curl_easy_setopt(curl, CURLOPT_URL, ("https://api.vk.com/method/groups.getLongPollServer?group_id="+ std::to_string(group_id) +"&access_token=" + token + "&v="+v+"&lang="+lang).c_str());
+					res = curl_easy_perform(curl);
+					root.Parse(content.c_str());
+
+					longpoll_key = root["response"]["key"].GetString();
+					server = root["response"]["server"].GetString();
+					ts = root["response"]["ts"].GetString();
+					content.clear();
+					break;
+				}
+			case 3:
+				{
+					std::cout << "Failed No 3" << std::endl;
+					break;
+				}
+		}
+	}
+	return content;
 }
+
 size_t vkapilib::VKBot::write_data(char* ptr, size_t size, size_t nmemb, std::string* data)
 {
 	if (data)
 	{
-		data->clear();
 		data->append(ptr, size * nmemb);
 		return size * nmemb;
 	}
