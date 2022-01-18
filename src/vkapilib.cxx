@@ -1,11 +1,20 @@
 /*
-   :::     :::                               :::::::       :::::::: 
-  :+:     :+:                              :+:   :+:     :+:    :+: 
- +:+     +:+                              +:+   +:+           +:+   
-+#+     +:+         +#++:++#++:++        +#+   +:+         +#+      
-+#+   +#+                               +#+   +#+       +#+         
-#+#+#+#                                #+#   #+# #+#  #+#           
- ###                                   #######  ### ##########      
+                                                                            
+                                                       .--,-``-.            
+                                          ,----..     /   /     '.          
+       ,---.                             /   /   \   / ../        ;         
+      /__./|            ,---,.          /   .     :  \ ``\  .`-    '        
+ ,---.;  ; |          ,'  .' |         .   /   ;.  \  \___\/   \   :        
+/___/ \  | |        ,---.'   ,        .   ;   /  ` ;       \   :   |        
+\   ;  \ ' |        |   |    |        ;   |  ; \ ; |       /  /   /         
+ \   \  \: |        :   :  .'         |   :  | ; | '       \  \   \         
+  ;   \  ' .        :   |.'           .   |  ' ' ' :   ___ /   :   |        
+   \   \   '        `---'             '   ;  \; /  |  /   /\   /   :        
+    \   `  ;                           \   \  ',  /__/ ,,/  ',-    .        
+     :   \ |                            ;   :    /  .\ ''\        ;         
+      '---"                              \   \ .'\  ; \   \     .'          
+                                          `---`   `--" `--`-,,-'            
+                                                                            
 
 
 */
@@ -60,16 +69,16 @@ int vkapilib::VKBot::fromId() { return std::stoi(from_id); }
 
 std::string vkapilib::VKBot::getMessage() { return message; }
 
-std::string vkapilib::VKBot::call(std::string method_name, std::string (*params)[2], size_t len)
+std::string vkapilib::VKBot::call(std::string method_name, std::map<std::string, std::string> params)
 {
 	content.clear();
 	std::stringstream params_str;
-	for (size_t i = 0; i < len; i++) {
-		std::string str = params[i][1];
-		str = replace(str);
-		params_str << "&" << params[i][0] << "=" << str;
+	params_str << "access_token=" << token;
+	for (const auto& [key, value]: params) {
+		params_str << "&" << key << "=" << replace(value);
 	}
 	std::string url = "https://api.vk.com/method/"+method_name+"?"+params_str.str()+"&v="+v;
+	std::cout << url << '\n';
 	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 	res = curl_easy_perform(curl);
 	if (res != CURLE_OK)
@@ -192,17 +201,14 @@ vkapilib::VKAPI::VKAPI(std::string v) : v(v)
 
 vkapilib::VKAPI::~VKAPI() { curl_easy_cleanup(curl); }
 
-std::string vkapilib::VKAPI::call(std::string method_name, std::string (*params)[2], size_t len)
+std::string vkapilib::VKAPI::call(std::string method_name, std::map<std::string, std::string> params)
 {
 	content.clear();
 	std::stringstream params_str;
-	for (size_t i = 0; i < len; i++) {
-		std::string str = params[i][1];
-		str = replace(str);
-		params_str << "&" << params[i][0] << "=" << str;
+	for (const auto& [key, value]: params) {
+		params_str << "&" << key << "=" << replace(value);
 	}
 	std::string url = "https://api.vk.com/method/"+method_name+"?"+params_str.str()+"&v="+v;
-
 	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
 	res = curl_easy_perform(curl);
 	if (res != CURLE_OK)
@@ -210,7 +216,6 @@ std::string vkapilib::VKAPI::call(std::string method_name, std::string (*params)
 		std::cout << "Error! No.2" << std::endl;
 		std::cout << curl_easy_strerror(res) << std::endl;
 	}
-
 	return content;
 }
 
