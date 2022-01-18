@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <sstream>
 #include <string>
 #include <iostream>
@@ -16,7 +17,7 @@ namespace vkapilib
     	int peerId();
     	int fromId();
         std::string update();
-        std::string call(std::string mathod_name, std::string (*params)[2], size_t len);
+        std::string call(std::string method_name, std::map<std::string, std::string> params);
     	std::string getMessage();
 
     private:
@@ -47,7 +48,7 @@ namespace vkapilib
     public:
     	VKAPI(std::string v);
     	~VKAPI();
-        std::string call(std::string mathod_name, std::string (*params)[2], size_t len);
+        std::string call(std::string method_name, std::map<std::string, std::string> params);
     private:
         static size_t write_data(char* ptr, size_t size, size_t nmemb, std::string* data);
 
